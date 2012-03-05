@@ -79,6 +79,26 @@ public class FakeWebTests extends TestCase {
 		}
 	}
 
+	public void testWaitConsumeFakeResponse() {
+		int timeout = 2;
+		executeRestTemplateOnFuture(1);
+		factory.waitFakeResponseConsumed(fakeResponse, timeout);
+	}
+
+	private void executeRestTemplateOnFuture(final int futureSeconds) {
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(futureSeconds * 1000);
+					restTemplate.getForEntity(dummyUri, String.class);
+				} catch (Exception e) {
+					throw new Error(e);
+				}
+			}
+		}.start();
+	}
+
 	public void testNoCallsOnRestTemplateWillNotConsumeFakeResponseAndShouldThrowException() {
 		int timeout = 1;
 		try {
