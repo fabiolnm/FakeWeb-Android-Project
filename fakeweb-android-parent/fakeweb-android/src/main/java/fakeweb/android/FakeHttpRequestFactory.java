@@ -26,13 +26,9 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 	private void waitFakeResponseExpectation() {
 		int count = 0;
 		while(fakeResponse == null) {
-			try {
-				if (++count <= timeoutInSeconds)
-					Thread.sleep(1000);
-				else break;
-			} catch (Exception e) {
-				Log.e(FakeHttpRequestFactory.class.getName(), "createRequest error", e);
-			}
+			if (++count <= timeoutInSeconds)
+				sleep();
+			else break;
 		}
 		if (fakeResponse == null)
 			throw new AssertionError("Missing faked responses?");
@@ -44,5 +40,23 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 
 	public void setFakeResponse(final FakeHttpResponse fakeResponse) {
 		this.fakeResponse = fakeResponse;
+	}
+
+	public void waitFakeResponseConsumed(final FakeHttpResponse fakeResponse, final int consumeTimeout) {
+		setFakeResponse(fakeResponse);
+		int count = 0;
+		while(fakeResponse.getRequest() == null) {
+			if (++count <= consumeTimeout)
+				sleep();
+			else throw new AssertionError("Fake response not consumed");
+		}
+	}
+
+	private void sleep() {
+		try {
+			Thread.sleep(1000);
+		} catch (Exception e) {
+			Log.e(FakeHttpRequestFactory.class.getName(), "sleep error", e);
+		}
 	}
 }

@@ -78,4 +78,27 @@ public class FakeWebTests extends TestCase {
 			assertTrue("Factory didn't wait for FakeResponse timeout", duration >= timeout);
 		}
 	}
+
+	public void testNoCallsOnRestTemplateWillNotConsumeFakeResponseAndShouldThrowException() {
+		int timeout = 1;
+		try {
+			factory.waitFakeResponseConsumed(fakeResponse, timeout);
+			fail("Consume timeout didn't throw exception");
+		} catch (AssertionError e) {
+			assertEquals("Fake response not consumed", e.getMessage());
+		}
+	}
+
+	public void testFakeResponseConsumingTimeout() {
+		int timeout = 2;
+		long start = System.currentTimeMillis();
+		try {
+			factory.waitFakeResponseConsumed(fakeResponse, timeout);
+		}
+		catch (Throwable e) {
+			long durationMillis = System.currentTimeMillis() - start, duration = durationMillis / 1000;
+			String msg = "Factory didn't wait enough (%dms) for consume timeout (%dms)";
+			assertTrue(String.format(msg, durationMillis, timeout * 1000), duration >= timeout);
+		}
+	}
 }

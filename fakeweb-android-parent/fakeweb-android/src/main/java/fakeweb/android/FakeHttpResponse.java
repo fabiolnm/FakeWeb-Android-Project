@@ -65,6 +65,9 @@ public class FakeHttpResponse implements ClientHttpResponse {
 		return body;
 	}
 
+	public FakeHttpRequest getRequest() {
+		return request;
+	}
 	public void setRequest(final FakeHttpRequest request) {
 		this.request = request;
 	}
