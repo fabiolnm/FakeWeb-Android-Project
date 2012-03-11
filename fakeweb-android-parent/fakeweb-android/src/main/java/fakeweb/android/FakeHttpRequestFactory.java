@@ -18,20 +18,20 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 
 	public ClientHttpRequest createRequest(final URI uri, final HttpMethod method) throws IOException {
 		waitFakeResponseExpectation();
-		ClientHttpRequest request = new FakeHttpRequest(uri, method, fakeResponse);
-		fakeResponse = null;
-		return request;
+		return new FakeHttpRequest(uri, method, fakeResponse);
 	}
 
 	private void waitFakeResponseExpectation() {
 		int count = 0;
-		while(fakeResponse == null) {
+		while(fakeResponse == null || fakeResponse.wasConsumed()) {
 			if (++count <= timeoutInSeconds)
 				sleep();
 			else break;
 		}
 		if (fakeResponse == null)
 			throw new AssertionError("Missing faked responses?");
+		else if (fakeResponse.wasConsumed())
+			throw new AssertionError("Current faked response was already consumed");
 	}
 
 	public void setTimeoutInSeconds(final int timeoutInSeconds) {
@@ -42,14 +42,21 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 		this.fakeResponse = fakeResponse;
 	}
 
-	public void waitFakeResponseConsumed(final FakeHttpResponse fakeResponse, final int consumeTimeout) {
-		setFakeResponse(fakeResponse);
+	public void waitFakeResponseConsumed(final int consumeTimeout) {
 		int count = 0;
-		while(fakeResponse.getRequest() == null) {
+		while(fakeResponse == null || !fakeResponse.wasConsumed()) {
 			if (++count <= consumeTimeout)
 				sleep();
-			else throw new AssertionError("Fake response not consumed");
+			else if (fakeResponse == null)
+				throw new AssertionError("Fake response is null");
+			else
+				throw new AssertionError("Fake response not consumed");
 		}
+	}
+
+	public void waitFakeResponseConsumed(final FakeHttpResponse fakeResponse, final int consumeTimeout) {
+		setFakeResponse(fakeResponse);
+		waitFakeResponseConsumed(consumeTimeout);
 	}
 
 	private void sleep() {

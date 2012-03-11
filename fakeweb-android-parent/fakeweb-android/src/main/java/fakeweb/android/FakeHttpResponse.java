@@ -59,6 +59,10 @@ public class FakeHttpResponse implements ClientHttpResponse {
 		this.responseBody = gson.toJson(response);
 	}
 
+	public boolean wasConsumed() {
+		return request != null;
+	}
+
 	public InputStream getBody() throws IOException {
 		if (body == null)
 			body = new ByteArrayInputStream(responseBody.getBytes());
