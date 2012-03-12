@@ -17,11 +17,16 @@ public class FakeHttpResponse implements ClientHttpResponse {
 
 	private FakeHttpRequest request;
 	private ByteArrayInputStream body;
-
-	private static final Gson gson = new Gson();
+	private final Gson gson;
 
 	public FakeHttpResponse() {
+		gson = new Gson();
 		setContentType("text/xml");
+	}
+
+	public FakeHttpResponse(Gson gson) {
+		this.gson = gson;
+		setContentType("application/json");
 	}
 
 	public HttpHeaders getHeaders() {
@@ -56,7 +61,7 @@ public class FakeHttpResponse implements ClientHttpResponse {
 	}
 	public void setResponseBodyAsJson(final Object response) {
 		setContentType("application/json");
-		this.responseBody = gson.toJson(response);
+		responseBody = gson.toJson(response);
 	}
 
 	public boolean wasConsumed() {
