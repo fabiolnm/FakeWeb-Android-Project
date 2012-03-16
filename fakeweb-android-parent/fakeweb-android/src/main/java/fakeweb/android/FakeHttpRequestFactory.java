@@ -16,22 +16,26 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 	private int timeoutInSeconds = 3;
 	private FakeHttpResponse fakeResponse;
 
+	private boolean stopped;
+
 	public ClientHttpRequest createRequest(final URI uri, final HttpMethod method) throws IOException {
-		waitFakeResponseExpectation();
+		waitFakeResponseExpectation(method, uri);
 		return new FakeHttpRequest(uri, method, fakeResponse);
 	}
 
-	private void waitFakeResponseExpectation() {
+	private void waitFakeResponseExpectation(HttpMethod method, URI uri) {
 		int count = 0;
 		while(fakeResponse == null || fakeResponse.wasConsumed()) {
-			if (++count <= timeoutInSeconds)
-				sleep();
-			else break;
+			if (stopped || ++count > timeoutInSeconds)
+				break;
+			sleep();
 		}
-		if (fakeResponse == null)
-			throw new AssertionError("Missing faked responses?");
-		else if (fakeResponse.wasConsumed())
-			throw new AssertionError("Current faked response was already consumed");
+		if (!stopped) {
+			if (fakeResponse == null)
+				throw new AssertionError(String.format("%s %s: Missing faked responses? (count: %s)", method, uri, count));
+			else if (fakeResponse.wasConsumed())
+				throw new AssertionError(String.format("%s %s: Current faked response was already consumed", method, uri));
+		}
 	}
 
 	public void setTimeoutInSeconds(final int timeoutInSeconds) {
@@ -45,11 +49,14 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 	public void waitFakeResponseConsumed(final int consumeTimeout) {
 		int count = 0;
 		while(fakeResponse == null || !fakeResponse.wasConsumed()) {
-			if (++count <= consumeTimeout)
-				sleep();
-			else if (fakeResponse == null)
+			if (stopped || ++count > consumeTimeout)
+				break;
+			sleep();
+		}
+		if (!stopped) {
+			if (fakeResponse == null)
 				throw new AssertionError("Fake response is null");
-			else
+			else if (!fakeResponse.wasConsumed())
 				throw new AssertionError("Fake response not consumed");
 		}
 	}
@@ -65,5 +72,9 @@ public class FakeHttpRequestFactory implements ClientHttpRequestFactory, Seriali
 		} catch (Exception e) {
 			Log.e(FakeHttpRequestFactory.class.getName(), "sleep error", e);
 		}
+	}
+
+	public void stop() {
+		stopped = true;
 	}
 }
